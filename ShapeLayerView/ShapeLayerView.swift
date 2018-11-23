@@ -8,42 +8,21 @@
 
 import UIKit
 
-/// CAShapeLayer-backed UIView subclass that synchronizes with UIKit-internal animations,
+/// CAShapeLayer subclass with its animatable `path` synchronizing with UIKit-internal animations,
 /// e.g. orientation change.
 ///
 /// - SeeAlso:
 ///   - https://gist.github.com/nicklockwood/d374033b27c62662ac8d
 ///   - https://stackoverflow.com/questions/24936987/animate-cashapelayer-path-on-animated-bounds-change
 ///   - https://stackoverflow.com/questions/35713244/circular-round-uiview-resizing-with-autolayout-how-to-animate-cornerradius
-open class ShapeLayerView: UIView
+open class ShapeLayer: CAShapeLayer
 {
-    open override class var layerClass: Swift.AnyClass
-    {
-        return CAShapeLayer.self
-    }
-
-    open override var layer: CAShapeLayer
-    {
-        return super.layer as! CAShapeLayer
-    }
-
-    /// UIView-animatable.
-    open var path: UIBezierPath?
-    {
-        get {
-            return self.layer.path.map(UIBezierPath.init)
-        }
-        set {
-            self.layer.path = newValue?.cgPath
-        }
-    }
-
-    open override func action(for layer: CALayer, forKey event: String) -> CAAction?
+    open override func action(forKey event: String) -> CAAction?
     {
         if event == "path" {
-            if let action = action(for: layer, forKey: "backgroundColor") as? CABasicAnimation {
+            if let action = action(forKey: "backgroundColor") as? CABasicAnimation {
                 let animation = CABasicAnimation(keyPath: event)
-                animation.fromValue = self.layer.path
+                animation.fromValue = self.path
 
                 // Copy values from existing action.
                 animation.autoreverses = action.autoreverses
@@ -61,7 +40,37 @@ open class ShapeLayerView: UIView
             }
         }
 
-        return super.action(for: layer, forKey: event)
+        return super.action(forKey: event)
+    }
+}
+
+// MARK: iOS / tvOS
+
+#if os(iOS) || os(tvOS)
+
+/// CAShapeLayer-backed UIView subclass that synchronizes with UIKit-internal animations,
+/// e.g. orientation change.
+open class ShapeLayerView: UIView
+{
+    open override class var layerClass: Swift.AnyClass
+    {
+        return ShapeLayer.self
+    }
+
+    open override var layer: CAShapeLayer
+    {
+        return super.layer as! CAShapeLayer
+    }
+
+    /// UIView-animatable.
+    open var path: UIBezierPath?
+    {
+        get {
+            return self.layer.path.map(UIBezierPath.init)
+        }
+        set {
+            self.layer.path = newValue?.cgPath
+        }
     }
 }
 
@@ -104,3 +113,5 @@ open class ShapeMaskedView: UIView
         }
     }
 }
+
+#endif
